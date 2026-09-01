@@ -15,7 +15,18 @@ export type MemberCardData = {
   skills: { id: string; kind: "OFFER" | "WANT"; skill: { name: string } }[];
 };
 
-export function MemberCard({ member }: { member: MemberCardData }) {
+/**
+ * `lead` decides which half of the trade is shown first. Browse flips it when
+ * you switch to the "looking to learn" side, so the column you searched on is
+ * the column you read first.
+ */
+export function MemberCard({
+  member,
+  lead = "OFFER",
+}: {
+  member: MemberCardData;
+  lead?: "OFFER" | "WANT";
+}) {
   const teaches = member.skills.filter((s) => s.kind === "OFFER");
   const learns = member.skills.filter((s) => s.kind === "WANT");
   const place = location(member.city, member.country);
@@ -36,37 +47,34 @@ export function MemberCard({ member }: { member: MemberCardData }) {
       </div>
 
       <div className="space-y-2.5">
-        <div>
-          <p className="mb-1.5 text-xs font-medium tracking-wide text-muted uppercase">Teaches</p>
-          <div className="flex flex-wrap gap-1.5">
-            {teaches.length ? (
-              teaches.slice(0, 4).map((s) => (
-                <Badge key={s.id} tone="brand">
-                  {s.skill.name}
-                </Badge>
-              ))
-            ) : (
-              <span className="text-sm text-muted">Nothing listed yet</span>
-            )}
-            {teaches.length > 4 ? <Badge>+{teaches.length - 4}</Badge> : null}
-          </div>
-        </div>
+        {(lead === "WANT" ? ["WANT", "OFFER"] : ["OFFER", "WANT"]).map((section) => {
+          const primary = section === lead;
+          const entries = section === "OFFER" ? teaches : learns;
 
-        {learns.length ? (
-          <div>
-            <p className="mb-1.5 text-xs font-medium tracking-wide text-muted uppercase">
-              Wants to learn
-            </p>
-            <div className="flex flex-wrap gap-1.5">
-              {learns.slice(0, 3).map((s) => (
-                <Badge key={s.id} tone="accent">
-                  {s.skill.name}
-                </Badge>
-              ))}
-              {learns.length > 3 ? <Badge>+{learns.length - 3}</Badge> : null}
+          // The half you filtered on always renders, even when empty, so the
+          // card does not silently change shape between results.
+          if (!entries.length && !primary) return null;
+
+          return (
+            <div key={section}>
+              <p className="mb-1.5 text-xs font-medium tracking-wide text-muted uppercase">
+                {section === "OFFER" ? "Teaches" : "Wants to learn"}
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                {entries.length ? (
+                  entries.slice(0, 4).map((s) => (
+                    <Badge key={s.id} tone={section === "OFFER" ? "brand" : "accent"}>
+                      {s.skill.name}
+                    </Badge>
+                  ))
+                ) : (
+                  <span className="text-sm text-muted">Nothing listed yet</span>
+                )}
+                {entries.length > 4 ? <Badge>+{entries.length - 4}</Badge> : null}
+              </div>
             </div>
-          </div>
-        ) : null}
+          );
+        })}
       </div>
 
       <Link

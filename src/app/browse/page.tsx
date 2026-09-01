@@ -13,7 +13,23 @@ export const metadata: Metadata = { title: "Browse members" };
 
 const PAGE_SIZE = 24;
 
-type Search = { q?: string; skill?: string; city?: string; category?: string; take?: string };
+type Search = {
+  q?: string;
+  skill?: string;
+  city?: string;
+  category?: string;
+  take?: string;
+  /** "wanted" flips the whole page to members looking to learn. */
+  mode?: string;
+};
+
+/** Rebuilds the query string, dropping empties so URLs stay readable. */
+function queryFor(values: Record<string, string>) {
+  const query = new URLSearchParams(
+    Object.entries(values).filter(([, value]) => value),
+  ).toString();
+  return query ? `/browse?${query}` : "/browse";
+}
 
 export default async function BrowsePage({
   searchParams,
@@ -22,6 +38,11 @@ export default async function BrowsePage({
 }) {
   const params = await searchParams;
   const { q = "", skill = "", city = "", category = "" } = params;
+  // The "wanted" board is the same query against WANT rows instead of OFFER —
+  // no new model, no new table, per roadmap 2.2.
+  const wanted = params.mode === "wanted";
+  const mode = wanted ? "wanted" : "";
+  const kind = wanted ? "WANT" : "OFFER";
   const take = Math.min(Math.max(Number(params.take) || PAGE_SIZE, PAGE_SIZE), 300);
   const viewer = await currentUser();
 
@@ -34,7 +55,7 @@ export default async function BrowsePage({
   const where: Prisma.UserWhereInput = {
     skills: {
       some: {
-        kind: "OFFER",
+        kind,
         ...(skill || category ? { skill: skillWhere } : {}),
       },
     },
@@ -71,12 +92,12 @@ export default async function BrowsePage({
     }),
     prisma.user.count({ where }),
     prisma.skill.findMany({
-      where: { users: { some: { kind: "OFFER" } } },
+      where: { users: { some: { kind } } },
       select: { id: true, name: true, slug: true },
       orderBy: { name: "asc" },
     }),
     prisma.skill.findMany({
-      where: { users: { some: { kind: "OFFER" } } },
+      where: { users: { some: { kind } } },
       select: { category: true },
       distinct: ["category"],
       orderBy: { category: "asc" },
@@ -90,12 +111,40 @@ export default async function BrowsePage({
 
   return (
     <div className="page-shell py-10">
-      <h1 className="text-3xl font-semibold tracking-tight">Browse members</h1>
+      <h1 className="text-3xl font-semibold tracking-tight">
+        {wanted ? "Who wants to learn" : "Browse members"}
+      </h1>
       <p className="mt-1.5 text-muted">
-        Everyone listed here is offering at least one skill. Find a trade that suits you.
+        {wanted
+          ? "Members looking for a teacher. If you can teach it, offer them a trade."
+          : "Everyone listed here is offering at least one skill. Find a trade that suits you."}
       </p>
 
-      <form className="mt-6 grid gap-3 rounded-xl border border-border bg-surface p-4 sm:grid-cols-2 lg:grid-cols-4 lg:items-end">
+      {/* Switching sides clears skill and category: the dropdowns are built from
+          different rows, so a slug valid on one side may not exist on the other. */}
+      <div className="mt-5 inline-flex rounded-lg border border-border bg-surface p-1 text-sm">
+        <Link
+          href={queryFor({ q, city })}
+          aria-current={wanted ? undefined : "page"}
+          className={`rounded-md px-3 py-1.5 font-medium transition ${
+            wanted ? "text-muted hover:text-fg" : "bg-brand text-brand-fg"
+          }`}
+        >
+          Offering a skill
+        </Link>
+        <Link
+          href={queryFor({ q, city, mode: "wanted" })}
+          aria-current={wanted ? "page" : undefined}
+          className={`rounded-md px-3 py-1.5 font-medium transition ${
+            wanted ? "bg-brand text-brand-fg" : "text-muted hover:text-fg"
+          }`}
+        >
+          Looking to learn
+        </Link>
+      </div>
+
+      <form className="mt-4 grid gap-3 rounded-xl border border-border bg-surface p-4 sm:grid-cols-2 lg:grid-cols-4 lg:items-end">
+        {wanted ? <input type="hidden" name="mode" value="wanted" /> : null}
         <div>
           <Label htmlFor="q">Search</Label>
           <Input id="q" name="q" defaultValue={q} placeholder="Name, skill or keyword" />
@@ -116,7 +165,7 @@ export default async function BrowsePage({
           </Select>
         </div>
         <div>
-          <Label htmlFor="skill">Skill on offer</Label>
+          <Label htmlFor="skill">{wanted ? "Skill wanted" : "Skill on offer"}</Label>
           <Select id="skill" name="skill" defaultValue={skill}>
             <option value="">Any skill</option>
             {skills.map((option) => (
@@ -131,7 +180,7 @@ export default async function BrowsePage({
             Apply
           </button>
           {filtered ? (
-            <Link href="/browse" className={buttonClass("ghost", "md")}>
+            <Link href={queryFor({ mode })} className={buttonClass("ghost", "md")}>
               Clear
             </Link>
           ) : null}
@@ -155,13 +204,17 @@ export default async function BrowsePage({
       {visibleMembers.length ? (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {(visibleMembers as MemberCardData[]).map((member) => (
-            <MemberCard key={member.id} member={member} />
+            <MemberCard key={member.id} member={member} lead={kind} />
           ))}
         </div>
       ) : (
         <EmptyState
           title="No members match yet"
-          description="Try a broader search, or be the first to offer this skill."
+          description={
+            wanted
+              ? "Nobody is asking for this yet. Try a broader search."
+              : "Try a broader search, or be the first to offer this skill."
+          }
         />
       )}
 
@@ -170,7 +223,7 @@ export default async function BrowsePage({
           <Link
             href={`/browse?${new URLSearchParams(
               Object.fromEntries(
-                Object.entries({ q, skill, city, category, take: String(take + PAGE_SIZE) }).filter(
+                Object.entries({ q, skill, city, category, mode, take: String(take + PAGE_SIZE) }).filter(
                   ([, value]) => value,
                 ),
               ),
