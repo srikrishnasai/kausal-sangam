@@ -17,6 +17,18 @@ export function SiteFooter() {
           </Link>
         </div>
       </div>
+
+      <div className="border-t border-border">
+        <div className="page-shell py-4 text-xs text-muted">
+          <p>
+            Built with{" "}
+            <span aria-hidden="true" className="text-accent">
+              &#9829;
+            </span>
+            <span className="sr-only">love</span> from India by Krishna
+          </p>
+        </div>
+      </div>
     </footer>
   );
 }
