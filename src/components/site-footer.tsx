@@ -19,7 +19,7 @@ export function SiteFooter() {
       </div>
 
       <div className="border-t border-border">
-        <div className="page-shell py-4 text-xs text-muted">
+        <div className="page-shell py-4 text-center text-xs text-muted">
           <p>
             Built with{" "}
             <span aria-hidden="true" className="text-accent">
