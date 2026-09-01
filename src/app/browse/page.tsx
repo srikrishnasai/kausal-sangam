@@ -51,7 +51,7 @@ export default async function BrowsePage({
     ];
   }
 
-  const [members, skills, categories] = await Promise.all([
+  const [members, total, skills, categories] = await Promise.all([
     prisma.user.findMany({
       where,
       select: {
@@ -69,6 +69,7 @@ export default async function BrowsePage({
       orderBy: { createdAt: "desc" },
       take: take + 1,
     }),
+    prisma.user.count({ where }),
     prisma.skill.findMany({
       where: { users: { some: { kind: "OFFER" } } },
       select: { id: true, name: true, slug: true },
@@ -138,12 +139,17 @@ export default async function BrowsePage({
       </form>
 
       <p className="mt-6 mb-4 text-sm text-muted">
-        {visibleMembers.length} {visibleMembers.length === 1 ? "member" : "members"}
-        {filtered
-          ? visibleMembers.length === 1
-            ? " matches your filters"
-            : " match your filters"
-          : ""}
+        {visibleMembers.length < total ? (
+          <>
+            Showing {visibleMembers.length} of {total} {total === 1 ? "member" : "members"}
+            {filtered ? " matching your filters" : ""}
+          </>
+        ) : (
+          <>
+            {total} {total === 1 ? "member" : "members"}
+            {filtered ? (total === 1 ? " matches your filters" : " match your filters") : ""}
+          </>
+        )}
       </p>
 
       {visibleMembers.length ? (
