@@ -98,3 +98,8 @@ category `Other`; nothing curates them yet.
   `schema.prisma`, run `npm run db:push` (which regenerates) before expecting new types.
 - `package.json` name is `kausal-sangam`; the folder is `Kausal Sangam`. npm forbids the latter as a
   package name. Do not "fix" one to match the other.
+- Browse pagination is offset-based on purpose and can duplicate a card when someone registers
+  mid-browse. It is a recorded, accepted limitation — see **Known and accepted** in
+  [STATUS.md](STATUS.md). Do not file it as a new bug; if you fix it, fix it as cursor pagination.
+- Browse filters both constrain the same `skill` relation. Merge them into one `skill` object —
+  two spreads of `{ skill: ... }` silently drop the first, which shipped as a bug once already.

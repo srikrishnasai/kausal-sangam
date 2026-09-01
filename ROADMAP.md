@@ -27,9 +27,15 @@ These aren't features; they're what every later item silently depends on.
 | # | Item | What it unlocks | Effort | Simpler alternative | Status |
 |---|------|------------------|--------|----------------------|--------|
 | 1.1 | **Skill category filter on Browse** | `Skill.category` already exists in the schema and is populated by seed data — this is a missing filter dropdown, not new data modeling | small | — already the simple version | **Done** — category `<Select>` added to `src/app/browse/page.tsx`, verified live (`?category=Music` narrowed 9 → 4 members) |
-| 1.2 | **Pagination on Browse** | Removes the hard 60-row cap silently breaking as members grow | small | Instead of full cursor pagination, ship a "Load more" button first (offset-based); switch to cursor pagination only if performance complains | **Done** — offset-style `take`/"Load more" link, default page size 24 (up from a flat 60-row cap with no way to see more) |
+| 1.2 | **Pagination on Browse** | Removes the hard 60-row cap silently breaking as members grow | small | Instead of full cursor pagination, ship a "Load more" button first (offset-based); switch to cursor pagination only if performance complains | **Done** — offset-style `take`/"Load more" link, default page size 24 (up from a flat 60-row cap with no way to see more). Cursor pagination deliberately **not** done; see the note below |
 | 1.3 | **Skill-level display on profiles** (`UserSkill.level` is already stored) | Turns the profile into a visible personal-growth tracker for free — no new writes needed, only a read-side render | trivial | — already the simple version | **Already done** before this roadmap existed — it shipped in the original `feat: skill-swap marketplace` commit. No work needed. |
 | 1.4 | **Post-swap reflection prompt** | "What did you learn?" — reuse the existing `Review.comment` field/UI instead of a new model; just add a prompt/placeholder text | trivial | Use the existing review comment box instead of a new "learning journal" table | **Done** — `ReviewForm` now labels the comment field "What did you learn about {skill}?" using the swap's actual learned skill, no schema change |
+
+> **Deferred from 1.2 — cursor pagination.** The shipped "Load more" is offset-based over a
+> newest-first list, so a registration landing mid-browse shifts rows down and the boundary member
+> can be returned twice. Cosmetic, and unreachable at current scale. Revisit when sign-ups are
+> frequent enough for two page loads to straddle one — the original "switch only if performance
+> complains" trigger should read *correctness*, not performance.
 
 ---
 

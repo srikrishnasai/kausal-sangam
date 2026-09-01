@@ -32,7 +32,9 @@ has been exercised against a live database.
 - **Skill management.** Add and remove skills, tagged `OFFER` or `WANT`, with a level on offers.
   Typing a skill that already exists reuses it (upsert by slug) instead of creating a duplicate.
 - **Browse and search.** Free-text across name, headline, bio and skill names; filter by city, by
-  skill category and by a specific skill; "Load more" pagination past the first 24 results.
+  skill category and by a specific skill; "Load more" pagination past the first 24 results. The
+  result count is a live query per request, but it counts *browsable members* — people offering at
+  least one skill, excluding the viewer — not registered users.
 - **Member profiles.** Public page showing offers, wants, rating and completed-swap count, plus the
   propose-a-swap form.
 - **Swap lifecycle.** Propose → accept or decline → complete, or cancel. Status transitions are
@@ -53,6 +55,21 @@ has been exercised against a live database.
 - Notification counts under concurrency — the header badge still includes a thread on the render
   where you open it, because layout and page render at the same time. It clears on the next
   navigation. Verified visually; not load-tested.
+
+### Known and accepted
+
+Real limitations we have chosen not to fix yet. Recorded so nobody rediscovers them as bugs.
+
+- **Browse pagination can duplicate a card.** Paging is offset-style (`take` + `take + 1`) over a
+  newest-first list. If someone registers between a page load and a "Load more" click, they land at
+  the top, shift everyone down one, and the member on the page boundary is returned twice. A member
+  who stops offering a skill causes the mirror problem — one row skipped.
+
+  Cosmetic only: no wrong data, no error. Unreachable at the current 9-member scale. The fix is
+  cursor pagination on `(createdAt, id)` — "the 24 after this member" instead of "rows 25–48" —
+  touching the query, the "Load more" href and the `take` param in
+  [`src/app/browse/page.tsx`](src/app/browse/page.tsx). Deferred until there is enough live traffic
+  for it to matter.
 
 ### Not started
 
@@ -104,8 +121,11 @@ live against the running dev server and seeded data:
 - The category filter narrows the 9-member seed set to 4 for `?category=Music`, and the dropdown
   lists the 7 real categories from the DB (Communication, Creative, Food, Languages, Music,
   Technology, Wellbeing).
-- Pagination's "Load more" math (`take` + `hasMore`) is in place with a default page size of 24;
-  it doesn't visibly trigger yet because the seed data only has 9 members — expected, not a bug.
+- Pagination's "Load more" math (`take` + `hasMore`) is in place with a default page size of 24.
+  It does not trigger on the 9-member seed set at that size; it was verified by temporarily setting
+  `PAGE_SIZE = 2`, which produced "Showing 2 of 9 members", a `?take=4` link, and
+  "Showing 2 of 4 members matching your filters" when combined with a filter. See
+  **Known and accepted** above for the drift this offset approach allows.
 - The review form's reflection prompt was wired through `youLearn` on the swap page, so it names
   the actual skill from that swap rather than generic copy.
 - Skill-level display on profiles turned out to already exist from the very first commit — no
