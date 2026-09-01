@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import { requireUserId } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { fieldErrorsOf, valuesOf, type FormState } from "@/lib/form";
+import { sendSwapRequestedEmail } from "@/lib/emails";
 import { swapRequestSchema } from "@/lib/validators";
 
 export async function createSwapRequestAction(
@@ -57,7 +58,25 @@ export async function createSwapRequestAction(
 
   const created = await prisma.swapRequest.create({
     data: { fromUserId: userId, toUserId, requestedSkillId, offeredSkillId, message },
-    select: { id: true },
+    select: {
+      id: true,
+      fromUser: { select: { name: true } },
+      toUser: { select: { name: true, email: true } },
+      requestedSkill: { select: { name: true } },
+      offeredSkill: { select: { name: true } },
+    },
+  });
+
+  // Never throws — a delivery failure must not lose a swap request that is
+  // already committed. Must also run before redirect(), which throws by design.
+  await sendSwapRequestedEmail({
+    to: created.toUser.email,
+    recipientName: created.toUser.name,
+    requesterName: created.fromUser.name,
+    requestedSkill: created.requestedSkill.name,
+    offeredSkill: created.offeredSkill.name,
+    message,
+    swapRequestId: created.id,
   });
 
   revalidatePath("/dashboard");
