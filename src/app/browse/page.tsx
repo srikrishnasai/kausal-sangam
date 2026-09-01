@@ -25,12 +25,17 @@ export default async function BrowsePage({
   const take = Math.min(Math.max(Number(params.take) || PAGE_SIZE, PAGE_SIZE), 300);
   const viewer = await currentUser();
 
+  // Both filters constrain the same relation, so they have to be merged into one
+  // `skill` object — two spreads of `{ skill: ... }` would silently drop the first.
+  const skillWhere: Prisma.SkillWhereInput = {};
+  if (skill) skillWhere.slug = skill;
+  if (category) skillWhere.category = category;
+
   const where: Prisma.UserWhereInput = {
     skills: {
       some: {
         kind: "OFFER",
-        ...(skill ? { skill: { slug: skill } } : {}),
-        ...(category ? { skill: { category } } : {}),
+        ...(skill || category ? { skill: skillWhere } : {}),
       },
     },
   };
