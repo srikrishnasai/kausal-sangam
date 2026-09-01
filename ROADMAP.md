@@ -41,13 +41,15 @@ These aren't features; they're what every later item silently depends on.
 
 ## Phase 2 — Community growth
 
-| # | Item | Simpler alternative |
-|---|------|----------------------|
-| 2.1 | Email notification on new swap request / message | Start with one transactional email ("new swap request received") before building digests or a preferences UI |
-| 2.2 | "Wanted" board — post a want with no match yet, get notified later | Reuse existing `UserSkill` WANT rows — make WANTs publicly browsable/searchable (Browse filtered to `kind = WANT`) instead of a new board/model |
-| 2.3 | Groups/circles by skill or city | Full version needs a new `Group` model + membership. Simpler alternative: a saved search ("follow all Bangalore Potters") that re-runs the existing Browse query and notifies on new matches — no new schema |
-| 2.4 | Referral/invite nudge after a completed swap | A static "Invite someone who teaches X" share message on the swap-completion screen — no referral-tracking table needed for v1 |
-| 2.5 | Community events / group workshops | Largest lift (new one-to-many booking model). Defer until 2.1–2.4 prove engagement; simpler alternative is an external link (Meet/Calendar) posted on a profile rather than in-app scheduling |
+**Status: 2.1, 2.2 and 2.4 done (2026-09-01). 2.3 and 2.5 deliberately not started.**
+
+| # | Item | Simpler alternative | Status |
+|---|------|----------------------|--------|
+| 2.1 | Email notification on new swap request / message | Start with one transactional email ("new swap request received") before building digests or a preferences UI | **Done** — pluggable transport, console by default, Resend over `fetch` when configured. One email only; no digests, no preferences UI |
+| 2.2 | "Wanted" board — post a want with no match yet, get notified later | Reuse existing `UserSkill` WANT rows — make WANTs publicly browsable/searchable (Browse filtered to `kind = WANT`) instead of a new board/model | **Done** — Browse gained an "Offering a skill / Looking to learn" switch. No new model. The notify-later half is not built |
+| 2.3 | Groups/circles by skill or city | Full version needs a new `Group` model + membership. Simpler alternative: a saved search ("follow all Bangalore Potters") that re-runs the existing Browse query and notifies on new matches — no new schema | **Not started** — needs saved searches, which need the notify-later half of 2.2 first |
+| 2.4 | Referral/invite nudge after a completed swap | A static "Invite someone who teaches X" share message on the swap-completion screen — no referral-tracking table needed for v1 | **Done** — shows on a completed swap only when the member wants a skill nobody teaches, and names that skill. No tracking table |
+| 2.5 | Community events / group workshops | Largest lift (new one-to-many booking model). Defer until 2.1–2.4 prove engagement; simpler alternative is an external link (Meet/Calendar) posted on a profile rather than in-app scheduling | **Not started** — deferred by design until engagement justifies it |
 
 ---
 

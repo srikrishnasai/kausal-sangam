@@ -11,7 +11,9 @@ import { SwapStatusBadge, type SwapStatus } from "@/components/swap-row";
 import { Avatar } from "@/components/ui/avatar";
 import { buttonClass } from "@/components/ui/button";
 import { Card, EmptyState, SectionTitle } from "@/components/ui/card";
-import { markSwapMessagesRead } from "@/lib/notifications";
+import { InviteNudge } from "@/components/invite-nudge";
+import { appUrl } from "@/lib/mailer";
+import { markSwapMessagesRead, unmetWant } from "@/lib/notifications";
 import { prisma } from "@/lib/prisma";
 import { formatDate, formatRelative } from "@/lib/utils";
 
@@ -77,6 +79,7 @@ export default async function SwapPage({ params }: { params: Promise<{ id: strin
 
   const canChat = status === "ACCEPTED" || status === "COMPLETED";
   const alreadyReviewed = swap.reviews.some((review) => review.authorId === viewer.id);
+  const wantNobodyTeaches = status === "COMPLETED" ? await unmetWant(viewer.id) : null;
 
   return (
     <div className="page-shell max-w-3xl py-10">
@@ -245,6 +248,17 @@ export default async function SwapPage({ params }: { params: Promise<{ id: strin
               <ReviewForm swapRequestId={swap.id} subjectName={other.name} skillLearned={youLearn} />
             </Card>
           )}
+
+          {wantNobodyTeaches ? (
+            <InviteNudge
+              skillName={wantNobodyTeaches}
+              message={[
+                `I have been trading skills on Kausal Sangam — just learned ${youLearn} from ${other.name}.`,
+                `Nobody there teaches ${wantNobodyTeaches} yet. If you can, come and join:`,
+                appUrl("/"),
+              ].join(" ")}
+            />
+          ) : null}
         </section>
       ) : null}
     </div>

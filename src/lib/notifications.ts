@@ -102,3 +102,30 @@ export async function markSwapMessagesRead(swapRequestId: string, userId: string
     data: { readAt: new Date() },
   });
 }
+
+/**
+ * A skill this member still wants that nobody currently teaches. That gap is
+ * the only honest reason to ask them to invite someone, so when there is no
+ * gap there is no nudge.
+ */
+export async function unmetWant(userId: string): Promise<string | null> {
+  const wants = await prisma.userSkill.findMany({
+    where: { userId, kind: "WANT" },
+    select: { skill: { select: { id: true, name: true } } },
+    orderBy: { createdAt: "asc" },
+  });
+  if (!wants.length) return null;
+
+  const supplied = await prisma.userSkill.findMany({
+    where: {
+      kind: "OFFER",
+      userId: { not: userId },
+      skillId: { in: wants.map((want) => want.skill.id) },
+    },
+    select: { skillId: true },
+    distinct: ["skillId"],
+  });
+
+  const taught = new Set(supplied.map((row) => row.skillId));
+  return wants.find((want) => !taught.has(want.skill.id))?.skill.name ?? null;
+}

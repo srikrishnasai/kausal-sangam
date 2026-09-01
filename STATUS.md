@@ -1,6 +1,6 @@
 # Project status
 
-**Last updated:** 2026-09-01 · **Stage:** Phase 1 of [ROADMAP.md](ROADMAP.md) complete. Browse now filters by category, paginates past the old 60-row cap, and swap reviews prompt for what was learned.
+**Last updated:** 2026-09-01 · **Stage:** Phases 0 and 1 complete; Phase 2 partly done — 2.1, 2.2 and 2.4 shipped, 2.3 and 2.5 deliberately not started.
 
 Kausal Sangam is a skill-swap marketplace built from scratch in one session. Every screen in the
 core loop — register, browse, propose a swap, accept, chat, complete, review — is implemented and
@@ -45,6 +45,16 @@ has been exercised against a live database.
   that swap.
 - **Dashboard.** Incoming, outgoing, active and past swaps in one place.
 - **Light and dark themes.** One token set, redefined once under `prefers-color-scheme`.
+- **Email on a new swap request.** One transactional email to the recipient. Delivery sits behind a
+  transport: with no provider configured it prints to the server console, which is the default on
+  purpose — every seeded account uses an @example.com address. Setting `RESEND_API_KEY` and
+  `EMAIL_FROM` switches to Resend over `fetch`, no new dependency. `sendEmail` never throws, and
+  even with a live transport it diverts undeliverable addresses to the console rather than bouncing.
+- **The wanted side of Browse.** An "Offering a skill / Looking to learn" switch runs the same query
+  against `WANT` rows, making demand browsable with no new model. Switching sides clears the skill
+  and category filters, because those dropdowns are built from different rows.
+- **Invite nudge on a completed swap.** Appears only when the member still wants a skill nobody
+  teaches, and names it. No referral table, no tracking.
 - **In-app notifications.** A header bell with a count, and `/notifications` listing swap requests
   waiting on you and unread message threads. Opening a swap marks its messages read. Derived from
   `SwapRequest.status` and the previously unused `Message.readAt` — no new tables.
