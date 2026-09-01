@@ -11,6 +11,7 @@ import { SwapStatusBadge, type SwapStatus } from "@/components/swap-row";
 import { Avatar } from "@/components/ui/avatar";
 import { buttonClass } from "@/components/ui/button";
 import { Card, EmptyState, SectionTitle } from "@/components/ui/card";
+import { markSwapMessagesRead } from "@/lib/notifications";
 import { prisma } from "@/lib/prisma";
 import { formatDate, formatRelative } from "@/lib/utils";
 
@@ -60,6 +61,11 @@ export default async function SwapPage({ params }: { params: Promise<{ id: strin
   });
 
   if (!swap) notFound();
+
+  // Opening the thread is the read receipt. The header badge still counts these
+  // on this render — layout and page render concurrently — and clears on the
+  // next navigation.
+  await markSwapMessagesRead(swap.id, viewer.id);
 
   const status = swap.status as SwapStatus;
   const outgoing = swap.fromUserId === viewer.id;

@@ -12,11 +12,13 @@ patterns in `src/app/actions/`). No effort estimate implies it fits comfortably 
 
 These aren't features; they're what every later item silently depends on.
 
-| # | Item | Why first | Effort |
+**Status: complete (2026-08-31).**
+
+| # | Item | Why first | Status |
 |---|------|-----------|--------|
-| 0.1 | Commit the working tree | Nothing is safely reversible until this happens (STATUS.md flags 24 uncommitted paths) | trivial |
-| 0.2 | Run `npm run build` once, fix what it surfaces | Dev mode hides prod-only errors; every phase below assumes a working build | small |
-| 0.3 | In-app notifications (at minimum: a bell / unread count on new swap requests and messages) | Every growth idea below (groups, wanted-board, badges) is dead on arrival if members only find out about activity by refreshing the dashboard | medium |
+| 0.1 | Commit the working tree | Nothing is safely reversible until this happens | **Done** — 4 commits, tree clean |
+| 0.2 | Run `npm run build` once, fix what it surfaces | Dev mode hides prod-only errors | **Done** — build, typecheck and lint all pass; nothing surfaced to fix |
+| 0.3 | In-app notifications (bell / unread count on new swap requests and messages) | Every growth idea below is dead on arrival if members only find out about activity by refreshing the dashboard | **Done** — header bell + `/notifications`, no schema change needed |
 
 ---
 
@@ -67,7 +69,7 @@ These aren't features; they're what every later item silently depends on.
 
 ## Suggested order
 
-1. Phase 0 — all three (0.3 notifications gates most of Phase 2).
+1. ~~Phase 0 — all three~~ **complete.**
 2. Phase 1 — all four; cheap, and 1.1/1.3 use data already sitting in the DB.
 3. 2.1 → 2.2 → 2.4 — notification-dependent, low schema cost.
 4. 3.1 → 3.2 → 3.3 — no schema cost, pure read-side/UI.

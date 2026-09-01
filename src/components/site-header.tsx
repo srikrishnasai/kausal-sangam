@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { currentUser } from "@/auth";
 import { logoutAction } from "@/app/actions/auth";
+import { NotificationBell } from "@/components/notification-bell";
 import { Avatar } from "@/components/ui/avatar";
 import { buttonClass } from "@/components/ui/button";
 
@@ -34,6 +35,7 @@ export async function SiteHeader() {
               <Link href="/dashboard" className={buttonClass("ghost", "sm")}>
                 Dashboard
               </Link>
+              <NotificationBell userId={user.id} />
               <Link
                 href="/dashboard/profile"
                 className="ml-1 rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"

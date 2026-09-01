@@ -1,6 +1,6 @@
 # Project status
 
-**Last updated:** 2026-08-31 · **Stage:** working prototype, running locally, nothing committed yet.
+**Last updated:** 2026-08-31 · **Stage:** Phase 0 of [ROADMAP.md](ROADMAP.md) complete. Committed, building clean, notifications shipped.
 
 Kausal Sangam is a skill-swap marketplace built from scratch in one session. Every screen in the
 core loop — register, browse, propose a swap, accept, chat, complete, review — is implemented and
@@ -12,12 +12,12 @@ has been exercised against a live database.
 
 | | |
 | --- | --- |
-| Source files | 42 (`src/` + `prisma/`) |
+| Source files | 45 (`src/` + `prisma/`) |
 | Lines of code | ~3,500 |
 | Runtime dependencies | 8 |
 | Database tables | 6 |
 | Rows in local DB | 9 users (8 seeded + 1 registered by hand), 17 skills, 6 swaps |
-| Git | 1 commit (`Initial commit from Create Next App`), 24 paths uncommitted |
+| Git | 5 commits, working tree clean, no remote configured yet |
 | Tests | none |
 
 ---
@@ -41,18 +41,22 @@ has been exercised against a live database.
 - **Reviews.** One per participant per completed swap; feeds the average rating on a profile.
 - **Dashboard.** Incoming, outgoing, active and past swaps in one place.
 - **Light and dark themes.** One token set, redefined once under `prefers-color-scheme`.
+- **In-app notifications.** A header bell with a count, and `/notifications` listing swap requests
+  waiting on you and unread message threads. Opening a swap marks its messages read. Derived from
+  `SwapRequest.status` and the previously unused `Message.readAt` — no new tables.
 
 ### Built but not independently verified
 
-- Production build (`npm run build`) — never run to completion; the app has only been exercised in
-  dev mode.
 - The `db:reset` path — the volume has not been destroyed and rebuilt from scratch since seeding.
+- Notification counts under concurrency — the header badge still includes a thread on the render
+  where you open it, because layout and page render at the same time. It clears on the next
+  navigation. Verified visually; not load-tested.
 
 ### Not started
 
 - Automated tests of any kind.
 - Pagination — browse hard-caps at 60 results.
-- Email or in-app notifications when a request arrives.
+- Email notifications (in-app ones now exist).
 - Rate limiting on registration and messaging.
 - Avatar URL host validation; remote URLs are rendered as-is.
 - Moderation, reporting, admin tooling.
@@ -93,12 +97,13 @@ Worth knowing before anyone tries to rebuild this from cold.
 
 ## Where the last session stopped
 
-The dev server exited with code 4 when Docker Desktop shut down. That was environmental, not a
-defect — the log shows `/login`, `/dashboard`, `/swaps/:id` and the message and swap-response
-actions all returning 200 right up to the exit.
+Phase 0 closed out. The tree is committed in five commits, `npm run build`, `typecheck` and
+`lint` all pass, and notifications were verified in the browser against seeded data: the bell
+counted 2 for `sneha@example.com` (one pending request, one unread thread), dropped to 1 after
+opening the swap, and showed the caught-up empty state for a member with nothing waiting.
 
-Nothing is committed beyond the `create-next-app` scaffold. All 24 changed and new paths are
-sitting in the working tree.
+**No git remote is configured.** Pushing to `github.com/srikrishnasai/kausal-sangam` is blocked —
+see the note at the end of this file.
 
 ---
 
@@ -123,10 +128,31 @@ Seeded accounts all use the password `password123` — see the table in [README.
 
 ## Suggested next steps, in order
 
-1. **Commit the work.** One commit for the scaffold delta, one for the app. The tree has been
-   uncommitted through the whole build.
-2. **Run `npm run build` once** and fix whatever the production build surfaces that dev mode hides.
-3. **Add tests** around the swap state machine — it has the most branching and the most to get wrong.
-4. **Pagination on browse** before the member count makes the 60-row cap visible.
-5. **Rate-limit registration and messaging** if this is ever exposed beyond localhost.
-6. **Validate avatar hosts**, or switch to uploads with `next/image`.
+Phase 0 is done. Next up is [Phase 1](ROADMAP.md), all four items of which are read-side work on
+data that already exists:
+
+1. **1.1 Skill category filter on Browse** — `Skill.category` is populated by the seed and unused
+   by the UI.
+2. **1.2 Pagination on Browse** — a "Load more" button first; the 60-row cap is currently silent.
+3. **1.3 Skill level on profiles** — `UserSkill.level` is stored and never rendered.
+4. **1.4 Post-swap reflection prompt** — placeholder copy on the existing review comment box.
+
+Outside the roadmap, still worth doing: **tests around the swap state machine** (the most branching
+in the codebase), **rate limiting** before this is exposed beyond localhost, and **avatar host
+validation**.
+
+---
+
+## Pushing to GitHub
+
+`git ls-remote https://github.com/srikrishnasai/kausal-sangam.git` returns *Repository not found*,
+and the `gh` CLI is not installed on this machine. Either the repository does not exist yet or it
+is private and this machine is unauthenticated.
+
+To push once it exists and you are authenticated:
+
+```bash
+git remote add origin https://github.com/srikrishnasai/kausal-sangam.git
+git branch -M main
+git push -u origin main
+```
