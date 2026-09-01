@@ -1,0 +1,151 @@
+// Kausal Sangam — skill-swap marketplace
+// Docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ---------------------------------------------------------------- users
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String
+  headline     String?
+  bio          String?
+  city         String?
+  country      String?
+  avatarUrl    String?
+  availability String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  skills           UserSkill[]
+  sentRequests     SwapRequest[] @relation("RequestsSent")
+  receivedRequests SwapRequest[] @relation("RequestsReceived")
+  messages         Message[]
+  reviewsWritten   Review[]      @relation("ReviewAuthor")
+  reviewsReceived  Review[]      @relation("ReviewSubject")
+
+  @@index([city])
+}
+
+// ---------------------------------------------------------------- skills
+
+model Skill {
+  id       String @id @default(cuid())
+  name     String @unique
+  slug     String @unique
+  category String
+
+  users            UserSkill[]
+  requestedInSwaps SwapRequest[] @relation("RequestedSkill")
+  offeredInSwaps   SwapRequest[] @relation("OfferedSkill")
+
+  @@index([category])
+}
+
+enum SkillKind {
+  OFFER
+  WANT
+}
+
+enum SkillLevel {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+  EXPERT
+}
+
+model UserSkill {
+  id          String      @id @default(cuid())
+  userId      String
+  skillId     String
+  kind        SkillKind
+  level       SkillLevel?
+  description String?
+  createdAt   DateTime    @default(now())
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  skill Skill @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, skillId, kind])
+  @@index([skillId, kind])
+}
+
+// ---------------------------------------------------------------- swaps
+
+enum SwapStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  CANCELLED
+  COMPLETED
+}
+
+model SwapRequest {
+  id     String     @id @default(cuid())
+  status SwapStatus @default(PENDING)
+
+  fromUserId String
+  toUserId   String
+
+  // What the requester wants to learn from the recipient.
+  requestedSkillId String
+  // What the requester gives back in return.
+  offeredSkillId String
+
+  message     String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  respondedAt DateTime?
+  completedAt DateTime?
+
+  fromUser       User  @relation("RequestsSent", fields: [fromUserId], references: [id], onDelete: Cascade)
+  toUser         User  @relation("RequestsReceived", fields: [toUserId], references: [id], onDelete: Cascade)
+  requestedSkill Skill @relation("RequestedSkill", fields: [requestedSkillId], references: [id])
+  offeredSkill   Skill @relation("OfferedSkill", fields: [offeredSkillId], references: [id])
+
+  messages Message[]
+  reviews  Review[]
+
+  @@index([toUserId, status])
+  @@index([fromUserId, status])
+}
+
+model Message {
+  id            String    @id @default(cuid())
+  swapRequestId String
+  senderId      String
+  body          String
+  createdAt     DateTime  @default(now())
+  readAt        DateTime?
+
+  swapRequest SwapRequest @relation(fields: [swapRequestId], references: [id], onDelete: Cascade)
+  sender      User        @relation(fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@index([swapRequestId, createdAt])
+}
+
+model Review {
+  id            String   @id @default(cuid())
+  swapRequestId String
+  authorId      String
+  subjectId     String
+  rating        Int
+  comment       String?
+  createdAt     DateTime @default(now())
+
+  swapRequest SwapRequest @relation(fields: [swapRequestId], references: [id], onDelete: Cascade)
+  author      User        @relation("ReviewAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  subject     User        @relation("ReviewSubject", fields: [subjectId], references: [id], onDelete: Cascade)
+
+  @@unique([swapRequestId, authorId])
+  @@index([subjectId])
+}
