@@ -17,7 +17,7 @@ has been exercised against a live database.
 | Runtime dependencies | 8 |
 | Database tables | 6 |
 | Rows in local DB | 9 users (8 seeded + 1 registered by hand), 17 skills, 6 swaps |
-| Git | 5 commits plus uncommitted Phase 1 changes, no remote configured yet |
+| Git | 7 commits on `main`, tree clean, pushed to [srikrishnasai/kausal-sangam](https://github.com/srikrishnasai/kausal-sangam) |
 | Tests | none |
 
 ---
@@ -154,14 +154,20 @@ validation**.
 
 ## Pushing to GitHub
 
-`git ls-remote https://github.com/srikrishnasai/kausal-sangam.git` returns *Repository not found*,
-and the `gh` CLI is not installed on this machine. Either the repository does not exist yet or it
-is private and this machine is unauthenticated.
-
-To push once it exists and you are authenticated:
+The remote is configured and `main` tracks `origin/main`:
 
 ```bash
-git remote add origin https://github.com/srikrishnasai/kausal-sangam.git
-git branch -M main
-git push -u origin main
+git push
+```
+
+Note for whoever pushes next: this machine's Git Credential Manager entry must belong to an account
+with write access to `srikrishnasai/kausal-sangam`. Accepting a collaborator invite is not enough
+on its own if the stored credential is a fine-grained token scoped to selected repositories — clear
+the cached entry and re-authenticate:
+
+```bash
+printf "protocol=https
+host=github.com
+
+" | git credential reject
 ```
