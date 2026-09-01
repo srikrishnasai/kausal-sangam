@@ -10,9 +10,11 @@ import { SubmitButton } from "@/components/submit-button";
 export function ReviewForm({
   swapRequestId,
   subjectName,
+  skillLearned,
 }: {
   swapRequestId: string;
   subjectName: string;
+  skillLearned?: string;
 }) {
   const [state, formAction] = useActionState(submitReviewAction, emptyFormState);
   const values = state.values ?? {};
@@ -44,13 +46,22 @@ export function ReviewForm({
         </Select>
       </Field>
 
-      <Field label="Comment" htmlFor="comment" error={state.fieldErrors?.comment} hint="Optional.">
+      <Field
+        label={skillLearned ? `What did you learn about ${skillLearned}?` : "Comment"}
+        htmlFor="comment"
+        error={state.fieldErrors?.comment}
+        hint="Optional."
+      >
         <Textarea
           id="comment"
           name="comment"
           rows={3}
           defaultValue={values.comment ?? ""}
-          placeholder="What went well?"
+          placeholder={
+            skillLearned
+              ? `Share what you picked up, or what went well with ${subjectName}.`
+              : "What went well?"
+          }
         />
       </Field>
 

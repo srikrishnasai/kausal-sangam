@@ -1,6 +1,6 @@
 # Project status
 
-**Last updated:** 2026-08-31 · **Stage:** Phase 0 of [ROADMAP.md](ROADMAP.md) complete. Committed, building clean, notifications shipped.
+**Last updated:** 2026-09-01 · **Stage:** Phase 1 of [ROADMAP.md](ROADMAP.md) complete. Browse now filters by category, paginates past the old 60-row cap, and swap reviews prompt for what was learned.
 
 Kausal Sangam is a skill-swap marketplace built from scratch in one session. Every screen in the
 core loop — register, browse, propose a swap, accept, chat, complete, review — is implemented and
@@ -17,7 +17,7 @@ has been exercised against a live database.
 | Runtime dependencies | 8 |
 | Database tables | 6 |
 | Rows in local DB | 9 users (8 seeded + 1 registered by hand), 17 skills, 6 swaps |
-| Git | 5 commits, working tree clean, no remote configured yet |
+| Git | 5 commits plus uncommitted Phase 1 changes, no remote configured yet |
 | Tests | none |
 
 ---
@@ -31,14 +31,16 @@ has been exercised against a live database.
 - **Profile editing.** Name, headline, bio, city, avatar URL.
 - **Skill management.** Add and remove skills, tagged `OFFER` or `WANT`, with a level on offers.
   Typing a skill that already exists reuses it (upsert by slug) instead of creating a duplicate.
-- **Browse and search.** Free-text across name, headline, bio and skill names; filter by city and
-  by a specific skill.
+- **Browse and search.** Free-text across name, headline, bio and skill names; filter by city, by
+  skill category and by a specific skill; "Load more" pagination past the first 24 results.
 - **Member profiles.** Public page showing offers, wants, rating and completed-swap count, plus the
   propose-a-swap form.
 - **Swap lifecycle.** Propose → accept or decline → complete, or cancel. Status transitions are
   enforced server-side, not just hidden in the UI.
 - **Messaging.** A thread scoped to one swap, unlocked once the swap is accepted.
-- **Reviews.** One per participant per completed swap; feeds the average rating on a profile.
+- **Reviews.** One per participant per completed swap; feeds the average rating on a profile. The
+  comment field is now framed as "What did you learn about {skill}?", naming the actual skill from
+  that swap.
 - **Dashboard.** Incoming, outgoing, active and past swaps in one place.
 - **Light and dark themes.** One token set, redefined once under `prefers-color-scheme`.
 - **In-app notifications.** A header bell with a count, and `/notifications` listing swap requests
@@ -55,12 +57,11 @@ has been exercised against a live database.
 ### Not started
 
 - Automated tests of any kind.
-- Pagination — browse hard-caps at 60 results.
 - Email notifications (in-app ones now exist).
 - Rate limiting on registration and messaging.
 - Avatar URL host validation; remote URLs are rendered as-is.
 - Moderation, reporting, admin tooling.
-- OAuth providers, session scheduling, skill categories in the browse filter.
+- OAuth providers, session scheduling.
 
 ---
 
@@ -97,10 +98,18 @@ Worth knowing before anyone tries to rebuild this from cold.
 
 ## Where the last session stopped
 
-Phase 0 closed out. The tree is committed in five commits, `npm run build`, `typecheck` and
-`lint` all pass, and notifications were verified in the browser against seeded data: the bell
-counted 2 for `sneha@example.com` (one pending request, one unread thread), dropped to 1 after
-opening the swap, and showed the caught-up empty state for a member with nothing waiting.
+Phase 1 closed out on top of Phase 0. `npm run build`, `typecheck` and `lint` all pass. Verified
+live against the running dev server and seeded data:
+
+- The category filter narrows the 9-member seed set to 4 for `?category=Music`, and the dropdown
+  lists the 7 real categories from the DB (Communication, Creative, Food, Languages, Music,
+  Technology, Wellbeing).
+- Pagination's "Load more" math (`take` + `hasMore`) is in place with a default page size of 24;
+  it doesn't visibly trigger yet because the seed data only has 9 members — expected, not a bug.
+- The review form's reflection prompt was wired through `youLearn` on the swap page, so it names
+  the actual skill from that swap rather than generic copy.
+- Skill-level display on profiles turned out to already exist from the very first commit — no
+  change was needed there; STATUS.md previously said this was missing and that was inaccurate.
 
 **No git remote is configured.** Pushing to `github.com/srikrishnasai/kausal-sangam` is blocked —
 see the note at the end of this file.
@@ -128,14 +137,14 @@ Seeded accounts all use the password `password123` — see the table in [README.
 
 ## Suggested next steps, in order
 
-Phase 0 is done. Next up is [Phase 1](ROADMAP.md), all four items of which are read-side work on
-data that already exists:
+Phase 1 is done. Next up is [Phase 2](ROADMAP.md) — community growth:
 
-1. **1.1 Skill category filter on Browse** — `Skill.category` is populated by the seed and unused
-   by the UI.
-2. **1.2 Pagination on Browse** — a "Load more" button first; the 60-row cap is currently silent.
-3. **1.3 Skill level on profiles** — `UserSkill.level` is stored and never rendered.
-4. **1.4 Post-swap reflection prompt** — placeholder copy on the existing review comment box.
+1. **2.1 Email notification** on a new swap request or message (start with one transactional email).
+2. **2.2 "Wanted" board** — make existing `WANT` rows publicly browsable, no new schema.
+3. **2.4 Referral/invite nudge** on the swap-completion screen — a static share message, no
+   tracking table for v1.
+4. **2.3 Groups/circles** and **2.5 group events** — deferred until 2.1/2.2/2.4 show engagement;
+   both need new schema, so they're the most expensive to get wrong early.
 
 Outside the roadmap, still worth doing: **tests around the swap state machine** (the most branching
 in the codebase), **rate limiting** before this is exposed beyond localhost, and **avatar host

@@ -242,7 +242,7 @@ export default async function SwapPage({ params }: { params: Promise<{ id: strin
 
           {alreadyReviewed ? null : (
             <Card>
-              <ReviewForm swapRequestId={swap.id} subjectName={other.name} />
+              <ReviewForm swapRequestId={swap.id} subjectName={other.name} skillLearned={youLearn} />
             </Card>
           )}
         </section>

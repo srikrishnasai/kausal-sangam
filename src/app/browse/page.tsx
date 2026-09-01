@@ -11,20 +11,28 @@ import type { Prisma } from "@/generated/prisma/client";
 
 export const metadata: Metadata = { title: "Browse members" };
 
-type Search = { q?: string; skill?: string; city?: string };
+const PAGE_SIZE = 24;
+
+type Search = { q?: string; skill?: string; city?: string; category?: string; take?: string };
 
 export default async function BrowsePage({
   searchParams,
 }: {
   searchParams: Promise<Search>;
 }) {
-  const { q = "", skill = "", city = "" } = await searchParams;
+  const params = await searchParams;
+  const { q = "", skill = "", city = "", category = "" } = params;
+  const take = Math.min(Math.max(Number(params.take) || PAGE_SIZE, PAGE_SIZE), 300);
   const viewer = await currentUser();
 
   const where: Prisma.UserWhereInput = {
-    skills: skill
-      ? { some: { kind: "OFFER", skill: { slug: skill } } }
-      : { some: { kind: "OFFER" } },
+    skills: {
+      some: {
+        kind: "OFFER",
+        ...(skill ? { skill: { slug: skill } } : {}),
+        ...(category ? { skill: { category } } : {}),
+      },
+    },
   };
 
   if (viewer) where.id = { not: viewer.id };
@@ -38,7 +46,7 @@ export default async function BrowsePage({
     ];
   }
 
-  const [members, skills] = await Promise.all([
+  const [members, skills, categories] = await Promise.all([
     prisma.user.findMany({
       where,
       select: {
@@ -54,16 +62,25 @@ export default async function BrowsePage({
         },
       },
       orderBy: { createdAt: "desc" },
-      take: 60,
+      take: take + 1,
     }),
     prisma.skill.findMany({
       where: { users: { some: { kind: "OFFER" } } },
       select: { id: true, name: true, slug: true },
       orderBy: { name: "asc" },
     }),
+    prisma.skill.findMany({
+      where: { users: { some: { kind: "OFFER" } } },
+      select: { category: true },
+      distinct: ["category"],
+      orderBy: { category: "asc" },
+    }),
   ]);
 
-  const filtered = Boolean(q || skill || city);
+  const hasMore = members.length > take;
+  const visibleMembers = hasMore ? members.slice(0, take) : members;
+
+  const filtered = Boolean(q || skill || city || category);
 
   return (
     <div className="page-shell py-10">
@@ -72,7 +89,7 @@ export default async function BrowsePage({
         Everyone listed here is offering at least one skill. Find a trade that suits you.
       </p>
 
-      <form className="mt-6 grid gap-3 rounded-xl border border-border bg-surface p-4 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
+      <form className="mt-6 grid gap-3 rounded-xl border border-border bg-surface p-4 sm:grid-cols-2 lg:grid-cols-4 lg:items-end">
         <div>
           <Label htmlFor="q">Search</Label>
           <Input id="q" name="q" defaultValue={q} placeholder="Name, skill or keyword" />
@@ -81,7 +98,18 @@ export default async function BrowsePage({
           <Label htmlFor="city">City</Label>
           <Input id="city" name="city" defaultValue={city} placeholder="Any city" />
         </div>
-        <div className="sm:col-span-2">
+        <div>
+          <Label htmlFor="category">Category</Label>
+          <Select id="category" name="category" defaultValue={category}>
+            <option value="">Any category</option>
+            {categories.map((option) => (
+              <option key={option.category} value={option.category}>
+                {option.category}
+              </option>
+            ))}
+          </Select>
+        </div>
+        <div>
           <Label htmlFor="skill">Skill on offer</Label>
           <Select id="skill" name="skill" defaultValue={skill}>
             <option value="">Any skill</option>
@@ -92,7 +120,7 @@ export default async function BrowsePage({
             ))}
           </Select>
         </div>
-        <div className="flex gap-2 sm:justify-end">
+        <div className="flex gap-2 sm:col-span-2 lg:col-span-4 lg:justify-end">
           <button type="submit" className={buttonClass("primary", "md")}>
             Apply
           </button>
@@ -105,13 +133,17 @@ export default async function BrowsePage({
       </form>
 
       <p className="mt-6 mb-4 text-sm text-muted">
-        {members.length} {members.length === 1 ? "member" : "members"}
-        {filtered ? (members.length === 1 ? " matches your filters" : " match your filters") : ""}
+        {visibleMembers.length} {visibleMembers.length === 1 ? "member" : "members"}
+        {filtered
+          ? visibleMembers.length === 1
+            ? " matches your filters"
+            : " match your filters"
+          : ""}
       </p>
 
-      {members.length ? (
+      {visibleMembers.length ? (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {(members as MemberCardData[]).map((member) => (
+          {(visibleMembers as MemberCardData[]).map((member) => (
             <MemberCard key={member.id} member={member} />
           ))}
         </div>
@@ -121,6 +153,23 @@ export default async function BrowsePage({
           description="Try a broader search, or be the first to offer this skill."
         />
       )}
+
+      {hasMore ? (
+        <div className="mt-8 flex justify-center">
+          <Link
+            href={`/browse?${new URLSearchParams(
+              Object.fromEntries(
+                Object.entries({ q, skill, city, category, take: String(take + PAGE_SIZE) }).filter(
+                  ([, value]) => value,
+                ),
+              ),
+            )}`}
+            className={buttonClass("secondary", "md")}
+          >
+            Load more
+          </Link>
+        </div>
+      ) : null}
     </div>
   );
 }
